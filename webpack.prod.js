@@ -8,6 +8,23 @@ const RedirectWebpackPlugin = require('redirect-webpack-plugin');
 
 // Load Common Configuration
 const common = require('./webpack.common.js');
+const Content = require('./src/_content.json');
+
+const paths = Content.children.reduce((paths, page) => {
+  if (page.type === 'directory') {
+    paths = Object.assign(
+      paths,
+      page.children.reduce((childPaths, child) => {
+        childPaths[child.url] = child.title;
+        return childPaths;
+      }, {})
+    );
+  } else {
+    paths[page.url] = page.title;
+  }
+
+  return paths;
+}, {});
 
 // ...
 const prod = {
@@ -17,7 +34,7 @@ const prod = {
       'process.env.NODE_ENV': JSON.stringify('production')
     })
   ]
-}
+};
 
 // Export both SSG and SPA configurations
 module.exports = env => [
@@ -28,7 +45,8 @@ module.exports = env => [
     },
     plugins: [
       new SSGPlugin({
-        crawl: true,
+        paths: Object.keys(paths),
+        locals: { paths },
         globals: {
           window: {}
         }
@@ -77,8 +95,8 @@ module.exports = env => [
     plugins: [
       new webpack.optimize.CommonsChunkPlugin({
         name: 'vendor',
-        chunks: [ 'index' ]
+        chunks: ['index']
       })
     ]
   })
-]
+];
